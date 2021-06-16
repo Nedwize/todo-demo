@@ -1,11 +1,14 @@
-import { useEffect, useState, SyntheticEvent } from 'react';
+import axios, { AxiosResponse } from 'axios';
+import { useEffect, useState, SyntheticEvent, FC } from 'react';
+import { Button, Input } from 'alphaa-components';
+
 interface TodoData {
   title: string;
   description: string;
   _id: string;
 }
 
-function App() {
+const App: FC = () => {
   const [todos, setTodos] = useState<TodoData[] | []>([]);
   const [todoId, setTodoId] = useState<string | null>(null);
   const [updating, setUpdating] = useState<boolean | null>(false);
@@ -26,12 +29,12 @@ function App() {
   const createTodo = async () => {
     try {
       console.log(name, description);
-      const res = await fetch('/api/todos', {
-        method: 'POST',
-        body: JSON.stringify({ name, description }),
+      const res: AxiosResponse = await axios.post('/api/todos', {
+        title: name,
+        description: description,
       });
-      const { todo } = await res.json();
-
+      const todo = res.data;
+      console.log(res.data);
       setTodos([...todos, todo]);
       setName('');
       setDescription('');
@@ -42,15 +45,16 @@ function App() {
 
   const updateTodo = async () => {
     try {
-      const res = await fetch(`/api/todos/${todoId}`, {
-        method: 'PUT',
-        body: JSON.stringify({ name, description, todoId }),
+      const res = await axios.put(`/api/todos/${todoId}`, {
+        title: name,
+        description,
       });
-      const json = await res.json();
+      console.log(res.data);
+      const todo = res.data;
 
       const todosCopy = [...todos];
       const index = todos.findIndex((m: TodoData) => m._id === todoId);
-      todosCopy[index] = json.todo;
+      todosCopy[index] = todo;
 
       setTodos(todosCopy);
       setName('');
@@ -92,82 +96,67 @@ function App() {
   };
 
   return (
-    <div className="container">
-      <div className="row justify-content-center">
-        <div className="col">
-          <h1 className="fw-normal text-center my-3">todos</h1>
-          <div className="my-4">
-            <form onSubmit={submitForm}>
-              <div className="row">
-                <div className="col-5">
-                  <input
-                    type="text"
-                    className="form-control"
-                    placeholder="Name"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                  />
-                </div>
-                <div className="col-5">
-                  <input
-                    type="text"
-                    className="form-control"
-                    placeholder="description"
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                  />
-                </div>
-                <div className="col-2">
-                  <button type="submit" className="btn btn-success">
-                    {updating ? 'Update' : 'Create'}
-                  </button>
-                </div>
-              </div>
-            </form>
-          </div>
-          {todos?.length > 0 ? (
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>_id</th>
-                  <th>title</th>
-                  <th>description</th>
-                  <th>actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {todos.map(({ _id, title, description }) => (
-                  <tr key={_id}>
-                    <td>{_id}</td>
-                    <td>{title}</td>
-                    <td>{description}</td>
-                    <td>
-                      <button
-                        className="btn btn-warning me-3"
-                        onClick={() => setTodoToUpdate(_id)}
-                      >
-                        Update
-                      </button>
-                      <button
-                        className="btn btn-danger"
-                        onClick={() => deleteTodo(_id)}
-                      >
-                        Delete
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          ) : todos ? (
-            <p>No todos</p>
-          ) : (
-            <p>Loading..</p>
-          )}
+    <>
+      <div className="container">
+        <div className="form-container">
+          <h1>todos</h1>
+          <form onSubmit={submitForm}>
+            <Input
+              placeholder="Name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
+            <Input
+              placeholder="Description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+            />
+            <div style={{ marginLeft: '35px' }}>
+              <Button
+                label={updating ? 'Update' : 'Create'}
+                type="submit"
+              ></Button>
+            </div>
+          </form>
         </div>
+        {todos?.length > 0 ? (
+          <div className="todo-container">
+            {todos.map(({ _id, title, description }) => (
+              <div key={_id} className="todo">
+                <div
+                  style={{
+                    width: '20vw',
+                  }}
+                >
+                  <p>
+                    <strong>{title}</strong> - {description}
+                  </p>
+                </div>
+                <div style={{ marginRight: '4px' }}>
+                  <Button
+                    bg="warning"
+                    label="Edit"
+                    size="small"
+                    onClick={() => setTodoToUpdate(_id)}
+                  ></Button>
+                </div>
+                <Button
+                  bg="danger"
+                  size="small"
+                  label="Delete"
+                  onClick={() => deleteTodo(_id)}
+                ></Button>
+              </div>
+            ))}
+          </div>
+        ) : todos ? (
+          <p>No todos</p>
+        ) : (
+          <p>Loading..</p>
+        )}
       </div>
-    </div>
+    </>
   );
-}
+};
 
 export default App;
